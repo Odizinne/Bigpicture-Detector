@@ -5,7 +5,6 @@ import time
 import re
 
 def check_window_names():
-    check_screen_status(INTERNAL_SCREEN)
     print("passed screen check")
     result = subprocess.run(['wmctrl', '-l'], stdout=subprocess.PIPE)
     windows = result.stdout.decode('utf-8')
@@ -40,6 +39,17 @@ def switch_screen(screen):
 def switch_audio(audio):
     subprocess.run(['pactl', 'set-default-sink', audio])
 
+def read_sunshine_status():
+    try:
+        with open('/home/flora/.local/share/sunshine_status/status.txt', 'r') as file:
+            content = file.read().strip()
+            if content == 'True':
+                return True
+            elif content == 'False':
+                return False
+    except FileNotFoundError:
+        return False
+
 def check_screen_status(screen):
     while True:
         result = subprocess.run(['gnome-randr'], stdout=subprocess.PIPE)
@@ -51,8 +61,8 @@ def check_screen_status(screen):
             print("Waiting for screen to connect...")
 
 def startup_reset():
-    check_screen_status(INTERNAL_SCREEN)
     switch_screen(INTERNAL_SCREEN_COMMAND)
+    subprocess.run(['sunshine-status', '--false'], check=False)
     switch_audio(get_node_name_from_description(INTERNAL_AUDIO))
 
 EXTERNAL_SCREEN = "HDMI-2 SAMSUNG"
@@ -69,7 +79,7 @@ startup_reset()
 try:
     while True:
         found = check_window_names()
-        if found and not gamemode:
+        if found and not gamemode and not read_sunshine_status():
             print("Steam big picture found.")
             switch_screen(EXTERNAL_SCREEN_COMMAND)
             check_screen_status(EXTERNAL_SCREEN)
