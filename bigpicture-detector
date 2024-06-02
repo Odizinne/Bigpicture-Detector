@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+
+import subprocess
+import time
+import re
+
+def check_window_names():
+    check_screen_status(INTERNAL_SCREEN)
+    print("passed screen check")
+    result = subprocess.run(['wmctrl', '-l'], stdout=subprocess.PIPE)
+    windows = result.stdout.decode('utf-8')
+
+    pattern = re.compile(r'\b(?=.*\bsteam\b)(?=.*\bmode\b)(?=.*\bbig\b)(?=.*\bpicture\b)', re.IGNORECASE)
+
+    for line in windows.splitlines():
+        parts = line.split(None, 3)
+        if len(parts) == 4:
+            title = parts[3]
+            if pattern.search(title):
+                return True
+
+    return False
+
+def get_node_name_from_description(description):
+    while True:
+        result = subprocess.run(['pactl', 'list', 'sinks'], stdout=subprocess.PIPE)
+        sinks = result.stdout.decode('utf-8')
+
+        for sink in sinks.split('\n\n'):
+            if description in sink:
+                match = re.search(r'Name: (.*)', sink)
+                if match:
+                    node_name = match.group(1)
+                    print(f"Found device.name: {node_name}")
+                    return node_name
+
+def switch_screen(screen):
+    subprocess.run(screen)
+
+def switch_audio(audio):
+    subprocess.run(['pactl', 'set-default-sink', audio])
+
+def check_screen_status(screen):
+    while True:
+        result = subprocess.run(['gnome-randr'], stdout=subprocess.PIPE)
+        screens = result.stdout.decode('utf-8')
+        if screen in screens:
+            print("found")
+            return True
+        else:
+            print("Waiting for screen to connect...")
+
+def startup_reset():
+    check_screen_status(INTERNAL_SCREEN)
+    switch_screen(INTERNAL_SCREEN_COMMAND)
+    switch_audio(get_node_name_from_description(INTERNAL_AUDIO))
+
+EXTERNAL_SCREEN = "HDMI-2 SAMSUNG"
+INTERNAL_SCREEN = "HDMI-1 XWU-CBA"
+EXTERNAL_SCREEN_COMMAND = ['gnome-randr', '--output', 'HDMI-2', '--mode', '3840x2160', '--same-as', 'HDMI-1']
+INTERNAL_SCREEN_COMMAND = ['gnome-randr', '--output', 'HDMI-2', '--off', '--output', 'HDMI-1', '--mode', '2560x1440']
+EXTERNAL_AUDIO = "Navi 31 HDMI/DP Audio"
+INTERNAL_AUDIO = "CORSAIR VOID ELITE Wireless Gaming Dongle"
+
+gamemode = False
+
+startup_reset()
+
+try:
+    while True:
+        found = check_window_names()
+        if found and not gamemode:
+            print("Steam big picture found.")
+            switch_screen(EXTERNAL_SCREEN_COMMAND)
+            check_screen_status(EXTERNAL_SCREEN)
+            EXTERNAL_AUDIO = get_node_name_from_description(EXTERNAL_AUDIO)
+            switch_audio(EXTERNAL_AUDIO)
+            gamemode = True
+
+        elif not found and gamemode:
+            print("Steam big picture closed.")
+            switch_screen(INTERNAL_SCREEN_COMMAND)
+            INTERNAL_AUDIO = get_node_name_from_description(INTERNAL_AUDIO)
+            switch_audio(INTERNAL_AUDIO)
+            gamemode = False
+
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("\nScript terminated by user.")
