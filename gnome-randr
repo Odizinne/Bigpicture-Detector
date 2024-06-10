@@ -719,10 +719,12 @@ class ConfigInfo:
     def print_short(self):
         for n in range(len(self.logical_monitors)):
             lm = self.logical_monitors[n]
-            print('primary: {}'
-                  ''.format(bool_to_str(lm[4])))
             for m in lm[5]:
                 print('{}'.format(m[0]))
+            print('primary: {}'
+                  ''.format(bool_to_str(lm[4])))
+            #for m in lm[5]:
+            #    print('{}'.format(m[0]))
             print()
         for m in self.monitors:
             print("Adapter: " '{}'.format(m[0][0]))
