@@ -1,0 +1,10 @@
+[Unit]
+Description=Steam external screen daemon
+After=gnome-session-wayland@gnome.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/bigpicture-detector -ga "Navi 31 HDMI/DP Audio" -da "CORSAIR VOID ELITE Wireless Gaming Dongle"
+
+[Install]
+WantedBy=graphical-session.target
