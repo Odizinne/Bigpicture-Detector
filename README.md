@@ -1,13 +1,12 @@
 # Bigpicture-Detector
 
-Python daemon to automate switching from PC to TV when launching Steam in big picture mode.<br/>
+Python daemon to automate switching from PC to TV when launching Steam in big picture mode.  
 Supports X11 and gnome-wayland
 
-It will autodetect your primary display as desktop mode screen, and your secondary display as gamemode screen.<br/>
+It will autodetect your primary display as desktop mode screen, and your secondary display as gamemode screen.  
 Also it will switch audio devices on the one you provided with launch arguments.
 
 This script will reset your system to desktop mode at exit.
-
 
 ## Dependencies
 
@@ -25,9 +24,9 @@ Both args should be filled with device description. You can get it from `pactl l
 
 Output should look like this:
 
-```
+```bash
 flora@fedora:~/Projects$ pactl list sinks | grep device.description
-		device.description = "CORSAIR VOID ELITE Wireless Gaming Dongle"
+        device.description = "CORSAIR VOID ELITE Wireless Gaming Dongle"
 ```
 
 If you plan to switch to HDMI audio, be sure to turn your HDMI monitor before running this command, else it wont be listed here.
