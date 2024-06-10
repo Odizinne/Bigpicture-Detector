@@ -17,6 +17,7 @@ def usage():
     print('usage: {} [options]\n'
           '\twhere options are:\n'
           '\t--current\n'
+          '\t--short\n'
           '\t--dry-run\n'
           '\t--persistent\n'
           '\t--global-scale <global-scale>\n'
@@ -433,12 +434,14 @@ class ActionRequest:
 
     def __init__(self):
         self.print_current = False
+        self.print_short = False
         self.dry_run = False
         # 1: temporary, 2: persistent
         self.config_method = 1
         self.global_scale = None
         self.primary = None
         self.output_config = nested_dict()
+
 
 class ConfigInfo:
 
@@ -713,6 +716,17 @@ class ConfigInfo:
             print('{} {} {} {}'.format(m[0][0], m[0][1], m[0][2], m[0][3]))
             print(modes_to_str_pretty(m[1]))
 
+    def print_short(self):
+        for n in range(len(self.logical_monitors)):
+            lm = self.logical_monitors[n]
+            print('primary: {}'
+                  ''.format(bool_to_str(lm[4])))
+            for m in lm[5]:
+                print('{}'.format(m[0]))
+            print()
+        for m in self.monitors:
+            print("Adapter: " '{}'.format(m[0][0]))
+
 def print_new_config(logical_monitors):
     print('new monitor configuration:')
     for n in range(len(logical_monitors)):
@@ -737,6 +751,8 @@ while n < len(sys.argv):
         usage()
     elif arg == '--current':
         requested_actions.print_current = True
+    elif arg == '--short':
+        requested_actions.print_short = True
     elif arg == '--dry-run':
         requested_actions.dry_run = True
     elif arg == '--persistent':
@@ -847,11 +863,16 @@ serial, monitors, logical_monitors, properties = dc_iface.GetCurrentState()
 config_info = ConfigInfo(serial, monitors, logical_monitors, properties)
 config_info.update_output_config(requested_actions)
 
+if requested_actions.print_short == True:
+    config_info.print_short()
+    quit()
+
 if (len(requested_actions.output_config) == 0 or 
     requested_actions.print_current == True):
     config_info.print_properties()
     config_info.print_current_config()
     quit()
+
 
 new_lm = monmap_to_lm(config_info, config_info.monmap)
 print_new_config(new_lm)
