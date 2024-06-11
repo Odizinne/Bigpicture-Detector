@@ -109,23 +109,14 @@ def validate_commands(commands):
             sys.exit(1)
 
 def get_screens(randr_command):
-    session_type = os.getenv("XDG_SESSION_TYPE")
-    
-    if session_type == "x11":
-        result = subprocess.run([randr_command], stdout=subprocess.PIPE)
-    elif session_type == "wayland":
-        result = subprocess.run([randr_command, '--short'], stdout=subprocess.PIPE)
-    else:
-        logger.error("Unsupported session type: {}".format(session_type))
-        sys.exit(1)
-    
+    result = subprocess.run([randr_command], stdout=subprocess.PIPE)
     output = result.stdout.decode('utf-8')
     internal_screen = None
     external_screen = None
-    
+
     if randr_command == "xrandr":
         for line in output.splitlines():
-            if 'connected' in line:
+            if 'connected' in line and 'disconnected' not in line:
                 screen_name = line.split()[0]
                 if 'primary' in line:
                     internal_screen = screen_name
@@ -133,14 +124,11 @@ def get_screens(randr_command):
                     external_screen = screen_name
     
     elif randr_command == "gnome-randr":
-        # Regular expression patterns to parse `gnome-randr` output
         adapter_pattern = re.compile(r'Adapter: (\w+-\d+)')
         primary_pattern = re.compile(r'primary: (\w+)')
         
-        # Extract adapter names
         adapters = adapter_pattern.findall(output)
         
-        # Extract primary adapter
         primary_adapter = None
         for line in output.split('\n'):
             match = primary_pattern.search(line)
@@ -188,7 +176,6 @@ def main():
     )
 
     atexit.register(desktopmode.activate)
-    #time.sleep(5)
     if check_window_names() and not read_sunshine_status():
         gamemode.activate()
     else:

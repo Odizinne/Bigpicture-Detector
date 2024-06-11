@@ -871,7 +871,7 @@ if requested_actions.print_current == True:
     quit()
     
 if (len(requested_actions.output_config) == 0 or 
-    requested_actions.print_print_short == True):
+    requested_actions.print_short == True):
     config_info.print_short()
     quit()
 
