@@ -865,16 +865,15 @@ serial, monitors, logical_monitors, properties = dc_iface.GetCurrentState()
 config_info = ConfigInfo(serial, monitors, logical_monitors, properties)
 config_info.update_output_config(requested_actions)
 
-if requested_actions.print_short == True:
-    config_info.print_short()
-    quit()
-
-if (len(requested_actions.output_config) == 0 or 
-    requested_actions.print_current == True):
+if requested_actions.print_current == True:
     config_info.print_properties()
     config_info.print_current_config()
     quit()
-
+    
+if (len(requested_actions.output_config) == 0 or 
+    requested_actions.print_print_short == True):
+    config_info.print_short()
+    quit()
 
 new_lm = monmap_to_lm(config_info, config_info.monmap)
 print_new_config(new_lm)
