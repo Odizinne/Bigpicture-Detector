@@ -8,6 +8,12 @@ Also it will switch audio devices on the one you provided with launch arguments.
 
 This script will reset your system to desktop mode at exit.
 
+## Primary use case
+
+This script is meant to be ran when using single monitor and TV plugged in.  
+Using a dual screen plus a TV might lead to random result.  
+I made this script for my own use, and i'll not address issue about other configuration than this one.
+
 ## Dependencies
 
 - `wmctrl` for window detection
