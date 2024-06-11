@@ -82,9 +82,9 @@ def read_sunshine_status():
         status_file = os.path.join(home_dir, ".local/share/sunshine_status/status.txt")
         with open(status_file, 'r') as file:
             content = file.read().strip()
-            if content == 'True':
+            if content == 'true':
                 return True
-            elif content == 'False':
+            elif content == 'false':
                 return False
     except FileNotFoundError:
         return False
