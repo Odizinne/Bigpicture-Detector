@@ -12,7 +12,7 @@ This script will reset your system to desktop mode at exit.
 
 This script is meant to be ran when using single monitor and TV plugged in.  
 Using a dual screen plus a TV might lead to random result.  
-I made this script for my own use, and i'll not address issue about other configuration than this one.
+I made this script for my own use, and I'll not address issue about other configuration than this one.
 
 ## Dependencies
 
