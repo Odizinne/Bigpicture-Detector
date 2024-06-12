@@ -76,17 +76,14 @@ def check_window_names():
 
     return False
 
+
 def read_sunshine_status():
-    try:
-        home_dir = os.path.expanduser("~")
-        status_file = os.path.join(home_dir, ".local/share/sunshine_status/status.txt")
-        with open(status_file, 'r') as file:
-            content = file.read().strip()
-            if content == 'true':
-                return True
-            elif content == 'false':
-                return False
-    except FileNotFoundError:
+    home_dir = os.path.expanduser("~")
+    status_file = os.path.join(home_dir, ".local/share/sunshine_status/status.txt")
+    
+    if os.path.exists(status_file):
+        return True
+    else:
         return False
 
 def get_randr_command():
