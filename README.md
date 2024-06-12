@@ -19,7 +19,7 @@ I made this script for my own use, and I'll not address issue about other config
 - `wmctrl` for window detection
 - `pactl` for audio device manipulation
 - `xrandr` for screen detection and manipulation under X11
-- `gnome-randr` (bundled) in path for gnome-wayland support
+- `gnome-randr` (work only with [my custom version](https://github.com/Odizinne/gnome-randr-py)) in path for gnome-wayland support
 
 ## Usage
 
@@ -38,6 +38,17 @@ flora@fedora:~/Projects$ pactl list sinks | grep device.description
 If you plan to switch to HDMI audio, be sure to turn your HDMI monitor before running this command, else it wont be listed here.
 
 Final command should look like: `bigpicture-detector -ga "Navi 31 HDMI/DP Audio" -da "CORSAIR VOID ELITE Wireless Gaming Dongle"`
+
+## Under the hood
+
+At launch, the script will attempt to detect your primary monitor and your TV with xrandr / modified gnome-randr.
+Logic here is: if monitor has primary, we set as desktop mode. Next monitor without primary will be set as gamemode monitor.
+
+Next it will take into consideration your selected desktop and gamemode audio.
+
+At this point we have gamemode and desktopmode.
+
+Each time you open BigPicture, script will switch to gamemode and wait for bigpicture window to close, and then reset to desktop mode. Nothing fancy here.
 
 ## To do
 

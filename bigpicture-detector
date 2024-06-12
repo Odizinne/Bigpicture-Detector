@@ -111,31 +111,13 @@ def get_screens(randr_command):
     internal_screen = None
     external_screen = None
 
-    if randr_command == "xrandr":
-        for line in output.splitlines():
-            if 'connected' in line and 'disconnected' not in line:
-                screen_name = line.split()[0]
-                if 'primary' in line:
-                    internal_screen = screen_name
-                else:
-                    external_screen = screen_name
-    
-    elif randr_command == "gnome-randr":
-        adapter_pattern = re.compile(r'Adapter: (\w+-\d+)')
-        primary_pattern = re.compile(r'primary: (\w+)')
-        
-        adapters = adapter_pattern.findall(output)
-        
-        primary_adapter = None
-        for line in output.split('\n'):
-            match = primary_pattern.search(line)
-            if match:
-                if match.group(1) == 'yes':
-                    primary_adapter = adapters.pop(0) if adapters else None
-                break
-        
-        internal_screen = primary_adapter
-        external_screen = next((x for x in adapters if x != primary_adapter), None)
+    for line in output.splitlines():
+        if 'connected' in line and 'disconnected' not in line:
+            screen_name = line.split()[0]
+            if 'primary' in line:
+                internal_screen = screen_name
+            else:
+                external_screen = screen_name
     
     if internal_screen is None or external_screen is None:
         logger.error("Could not determine internal or external screens.")
