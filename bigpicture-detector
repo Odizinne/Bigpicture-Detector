@@ -149,7 +149,9 @@ def create_default_settings():
 def show_settings_window():
     
     app = QtWidgets.QApplication(sys.argv)
-    SettingsWindow = uic.loadUi("design.ui")
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    ui_file = os.path.join(script_dir, "design.ui")
+    SettingsWindow = uic.loadUi(ui_file)
     SettingsWindow.setWindowTitle("BigPicture-Detector - Settings")
     SettingsWindow.setFixedSize(SettingsWindow.size())
     settings = load_settings()
