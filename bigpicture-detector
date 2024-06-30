@@ -54,6 +54,8 @@ def load_configuration():
     parser = argparse.ArgumentParser(description='Big Picture Detector')
     parser.add_argument('--gamemode-audio', '-ga', type=str, required=True, help='Audio for game mode')
     parser.add_argument('--desktopmode-audio', '-da', type=str, required=True, help='Audio for desktop mode')
+    parser.add_argument('--desktopmode-screen', '-ds', type=str, required=True, help='Name of the desktopmode adapter')
+    parser.add_argument('--gamemode-screen', '-gs', type=str, required=True, help='Name of the gamemode adapter')
     args = parser.parse_args()
 
     if not args.gamemode_audio or not args.desktopmode_audio:
@@ -76,22 +78,37 @@ def check_window_names():
 
     return False
 
-
 def read_sunshine_status():
     home_dir = os.path.expanduser("~")
     status_file = os.path.join(home_dir, ".local/share/sunshine_status/status.txt")
     
     return os.path.exists(status_file)
 
+def get_session_type():
+    session_type = os.getenv("XDG_SESSION_TYPE").lower()
+    if session_type == "x11":
+        return "x11"
+    elif session_type == "wayland":
+        desktop_session = os.getenv("XDG_CURRENT_DESKTOP").lower()
+        if desktop_session == "gnome":
+            return "gnome-wayland"
+        elif desktop_session == "kde":
+            return "kde-wayland"
+    else:
+        return "Unsupported"
+    
 def get_randr_command():
-    session_type = os.getenv("XDG_SESSION_TYPE")
+    session_type = get_session_type()
     
     if session_type == "x11":
         logger.info("Session type: X11. Using xrandr.")
         return "xrandr"
-    elif session_type == "wayland":
-        logger.info("Session type: Wayland. Using gnome-randr.")
+    elif session_type == "gnome-wayland":
+        logger.info("Session type: GNOME Wayland. Using gnome-randr.")
         return "gnome-randr"
+    elif session_type == "kde-wayland":
+        logger.info("Session type: KDE Wayland. Using kscreen-doctor.")
+        return "kscreen-doctor"
     else:
         logger.error(f"Unsupported session type: {session_type}")
         sys.exit(1)
@@ -102,50 +119,33 @@ def validate_commands(commands):
             logger.error(f"The required command '{command}' is not installed.")
             sys.exit(1)
 
-def get_screens(randr_command):
-    result = subprocess.run([randr_command], stdout=subprocess.PIPE)
-    output = result.stdout.decode('utf-8')
-    internal_screen = None
-    external_screen = None
-
-    for line in output.splitlines():
-        if 'connected' in line and 'disconnected' not in line:
-            screen_name = line.split()[0]
-            if 'primary' in line:
-                internal_screen = screen_name
-            else:
-                external_screen = screen_name
-    
-    if internal_screen is None or external_screen is None:
-        logger.error("Could not determine internal or external screens.")
-        sys.exit(1)
-    
-    logger.info(f"Internal screen: {internal_screen}")
-    logger.info(f"External screen: {external_screen}")
-    
-    return internal_screen, external_screen
-
-def generate_screen_command(randr_command, output_screen, off_screen):
-    return [randr_command, '--output', output_screen, '--auto', '--output', off_screen, '--off']
+def generate_screen_command(randr_command, output_screen, off_screen, session_type):
+    if session_type == "x11" or session_type == "gnome-wayland":
+        return [randr_command, '--output', output_screen, '--auto', '--output', off_screen, '--off']
+    elif session_type == "kde-wayland":
+        return [randr_command, f'output.{output_screen}.enable', f'output.{off_screen}.disable']
 
 def main():
     args = load_configuration()
-
+    session_type = get_session_type()
     randr_command = get_randr_command()
     validate_commands(['pactl', 'wmctrl', randr_command])
     
-    internal_screen, external_screen = get_screens(randr_command)
+    external_screen = args.gamemode_screen
+    internal_screen = args.desktopmode_screen
     logger.info(f"Game mode audio: {args.gamemode_audio}")
     logger.info(f"Desktop mode audio: {args.desktopmode_audio}")
+    logger.info(f"Game mode screen: {external_screen}")
+    logger.info(f"Desktop mode screen: {internal_screen}")
     
     gamemode = Mode(
-        generate_screen_command(randr_command, external_screen, internal_screen),
+        generate_screen_command(randr_command, external_screen, internal_screen, session_type),
         args.gamemode_audio,
         "Game Mode",
         external_screen
     )
     desktopmode = Mode(
-        generate_screen_command(randr_command, internal_screen, external_screen),
+        generate_screen_command(randr_command, internal_screen, external_screen, session_type),
         args.desktopmode_audio,
         "Desktop Mode",
         internal_screen
