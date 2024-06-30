@@ -5,13 +5,17 @@ import time
 import re
 import atexit
 import os
-import shutil
 import sys
+import json
 import argparse
 import logging
+import shutil
+from PyQt6 import QtWidgets, uic
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".config/bigpicture-detector/settings.json")
 
 class Mode:
     def __init__(self, screen_command, audio, mode_name, screen_name):
@@ -52,14 +56,8 @@ class Mode:
 
 def load_configuration():
     parser = argparse.ArgumentParser(description='Big Picture Detector')
-    parser.add_argument('--gamemode-audio', '-ga', type=str, required=True, help='Audio for game mode')
-    parser.add_argument('--desktopmode-audio', '-da', type=str, required=True, help='Audio for desktop mode')
-    parser.add_argument('--desktopmode-screen', '-ds', type=str, required=True, help='Name of the desktopmode adapter')
-    parser.add_argument('--gamemode-screen', '-gs', type=str, required=True, help='Name of the gamemode adapter')
+    parser.add_argument('--settings', action='store_true', help='Open settings window')
     args = parser.parse_args()
-
-    if not args.gamemode_audio or not args.desktopmode_audio:
-        parser.error("Both --gamemode-audio and --desktopmode-audio are required")
 
     return args
 
@@ -125,28 +123,106 @@ def generate_screen_command(randr_command, output_screen, off_screen, session_ty
     elif session_type == "kde-wayland":
         return [randr_command, f'output.{output_screen}.enable', f'output.{off_screen}.disable']
 
+def load_settings():
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as f:
+            return json.load(f)
+    else:
+        return None
+
+def save_settings(settings):
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(settings, f, indent=4)
+        logger.info("Settings saved to %s", CONFIG_PATH)
+
+def create_default_settings():
+    default_settings = {
+        "checkRate": 1000,
+        "gamemodeAdapter": "Adapter for switching to gamemode",
+        "desktopAdapter": "Adapter for switching to desktop",
+        "gamemodeAudio": "Audio output for switching to gamemode",
+        "desktopAudio": "Audio output for switching to desktop"
+    }
+    save_settings(default_settings)
+
+def show_settings_window():
+    
+    app = QtWidgets.QApplication(sys.argv)
+    SettingsWindow = uic.loadUi("design.ui")
+    SettingsWindow.setWindowTitle("BigPicture-Detector - Settings")
+    SettingsWindow.setFixedSize(SettingsWindow.size())
+    settings = load_settings()
+    
+    if settings:
+        SettingsWindow.checkRate.setValue(settings["checkRate"])
+        SettingsWindow.gamemodeAudio.setText(settings["gamemodeAudio"])
+        SettingsWindow.desktopAudio.setText(settings["desktopAudio"])
+        SettingsWindow.gamemodeAdapter.setText(settings["gamemodeAdapter"])
+        SettingsWindow.desktopAdapter.setText(settings["desktopAdapter"])
+
+    def save_and_exit():
+        new_settings = {
+            "checkRate": SettingsWindow.checkRate.value(),
+            "gamemodeAudio": SettingsWindow.gamemodeAudio.text(),
+            "desktopAudio": SettingsWindow.desktopAudio.text(),
+            "gamemodeAdapter": SettingsWindow.gamemodeAdapter.text(),
+            "desktopAdapter": SettingsWindow.desktopAdapter.text()
+        }
+        save_settings(new_settings)
+        
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+        msg.setText("Settings saved successfully!")
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msg.exec()
+        sys.exit()
+
+    SettingsWindow.saveButton.clicked.connect(save_and_exit)
+    SettingsWindow.show()
+    app.exec()
+
+
 def main():
     args = load_configuration()
+    
+    if args.settings:
+        if not os.path.exists(CONFIG_PATH):
+            create_default_settings()
+        show_settings_window()
+        return
+
+    settings = load_settings()
+    
+    if not settings:
+        logger.error("Settings file not found. Please run with --settings to create one.")
+        sys.exit(1)
+    
+    checkRate = settings["checkRate"]
+    external_screen = settings["gamemodeAdapter"]
+    internal_screen = settings["desktopAdapter"]
+    gamemode_audio = settings["gamemodeAudio"]
+    desktop_audio = settings["desktopAudio"]
+    
+    logger.info(f"window check rate (ms): {checkRate}")
+    logger.info(f"gamemode screen: {external_screen}")
+    logger.info(f"desktop screen: {internal_screen}")
+    logger.info(f"gamemode audio output: {gamemode_audio}")
+    logger.info(f"desktop audio output: {desktop_audio}")
+
     session_type = get_session_type()
     randr_command = get_randr_command()
     validate_commands(['pactl', 'wmctrl', randr_command])
     
-    external_screen = args.gamemode_screen
-    internal_screen = args.desktopmode_screen
-    logger.info(f"Game mode audio: {args.gamemode_audio}")
-    logger.info(f"Desktop mode audio: {args.desktopmode_audio}")
-    logger.info(f"Game mode screen: {external_screen}")
-    logger.info(f"Desktop mode screen: {internal_screen}")
-    
     gamemode = Mode(
         generate_screen_command(randr_command, external_screen, internal_screen, session_type),
-        args.gamemode_audio,
+        gamemode_audio,
         "Game Mode",
         external_screen
     )
     desktopmode = Mode(
         generate_screen_command(randr_command, internal_screen, external_screen, session_type),
-        args.desktopmode_audio,
+        desktop_audio,
         "Desktop Mode",
         internal_screen
     )
@@ -167,7 +243,7 @@ def main():
                 if not desktopmode.is_active():
                     desktopmode.activate()
                     gamemode.deactivate()
-            time.sleep(1)
+            time.sleep(checkRate / 1000)
     except KeyboardInterrupt:
         logger.info("Exiting.")
 
