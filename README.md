@@ -23,12 +23,9 @@ I made this script for my own use, and I'll not address issue about other config
 
 ## Usage
 
-- `--gamemode-audio, -ga`
-- `--desktopmode-audio, -da`
-- `--gamemode-screen, -gs`
-- `--desktopmode-screen, -ds`
+For first run you should do `./bigpicture-detector --settings`
 
-Both args should be filled with device description. You can get it from `pactl list sinks | grep device.description`
+Both audio settings should be filled with device description. You can get it from `pactl list sinks | grep device.description`
 
 Output should look like this:
 
@@ -39,7 +36,9 @@ flora@fedora:~/Projects$ pactl list sinks | grep device.description
 
 If you plan to switch to HDMI audio, be sure to turn your HDMI monitor before running this command, else it wont be listed here.
 
-Final command should look like: `bigpicture-detector -gs "DP-2" -ds "HDMI-A-2" -ga "Navi 31 HDMI/DP Audio" -da "CORSAIR VOID ELITE Wireless Gaming Dongle"`
+I do not recommand going below 100ms for check rate. If unsure, do not edit.
+
+when everything is done, close the app, and launch without arguments. I recommend to setup a systemd service (set and forget).
 
 ## To do
 
