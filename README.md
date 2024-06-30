@@ -1,9 +1,9 @@
 # Bigpicture-Detector
 
 Python daemon to automate switching from PC to TV when launching Steam in big picture mode.  
-Supports X11 and gnome-wayland
+Supports X11, gnome-wayland and plasma-wayland.
 
-It will autodetect your primary display as desktop mode screen, and your secondary display as gamemode screen.  
+It will switch display using provided adapters with launch arguments.
 Also it will switch audio devices on the one you provided with launch arguments.
 
 This script will reset your system to desktop mode at exit.
@@ -25,6 +25,8 @@ I made this script for my own use, and I'll not address issue about other config
 
 - `--gamemode-audio, -ga`
 - `--desktopmode-audio, -da`
+- `--gamemode-screen, -gs`
+- `--desktopmode-screen, -ds`
 
 Both args should be filled with device description. You can get it from `pactl list sinks | grep device.description`
 
@@ -37,22 +39,11 @@ flora@fedora:~/Projects$ pactl list sinks | grep device.description
 
 If you plan to switch to HDMI audio, be sure to turn your HDMI monitor before running this command, else it wont be listed here.
 
-Final command should look like: `bigpicture-detector -ga "Navi 31 HDMI/DP Audio" -da "CORSAIR VOID ELITE Wireless Gaming Dongle"`
-
-## Under the hood
-
-At launch, the script will attempt to detect your primary monitor and your TV with xrandr / modified gnome-randr.
-Logic here is: if monitor has primary, we set as desktop mode. Next monitor without primary will be set as gamemode monitor.
-
-Next it will take into consideration your selected desktop and gamemode audio.
-
-At this point we have gamemode and desktopmode.
-
-Each time you open BigPicture, script will switch to gamemode and wait for bigpicture window to close, and then reset to desktop mode. Nothing fancy here.
+Final command should look like: `bigpicture-detector -gs "DP-2" -ds "HDMI-A-2" -ga "Navi 31 HDMI/DP Audio" -da "CORSAIR VOID ELITE Wireless Gaming Dongle"`
 
 ## To do
 
 Will probably do one day but low priority
 
-- Add feature to disable audio switching
-- Add KDE Plasma support
+- Add feature to disable audio switching.
+- PyQt gui to create / manage settings and avoid using launch arguments.
