@@ -54,6 +54,8 @@ def load_configuration():
     parser = argparse.ArgumentParser(description='Big Picture Detector')
     parser.add_argument('--gamemode-audio', '-ga', type=str, required=True, help='Audio for game mode')
     parser.add_argument('--desktopmode-audio', '-da', type=str, required=True, help='Audio for desktop mode')
+    parser.add_argument('--gamemode-override', '-go', type=str, help='Override command for game mode (e.g., kscreen-doctor command)')
+    parser.add_argument('--desktop-override', '-do', type=str, help='Override command for desktop mode (e.g., kscreen-doctor command)')
     args = parser.parse_args()
 
     if not args.gamemode_audio or not args.desktopmode_audio:
@@ -75,7 +77,6 @@ def check_window_names():
                 return True
 
     return False
-
 
 def read_sunshine_status():
     home_dir = os.path.expanduser("~")
@@ -125,27 +126,36 @@ def get_screens(randr_command):
     
     return internal_screen, external_screen
 
-def generate_screen_command(randr_command, output_screen, off_screen):
-    return [randr_command, '--output', output_screen, '--auto', '--output', off_screen, '--off']
+def generate_screen_command(randr_command, output_screen, off_screen, override_command=None):
+    if override_command:
+        return override_command.split()
+    else:
+        return [randr_command, '--output', output_screen, '--auto', '--output', off_screen, '--off']
 
 def main():
     args = load_configuration()
-
-    randr_command = get_randr_command()
-    validate_commands(['pactl', 'wmctrl', randr_command])
+    gamemode_override = args.gamemode_override if args.gamemode_override else None
+    desktopmode_override = args.desktop_override if args.desktop_override else None
+    randr_command = None
+    external_screen = None
+    internal_screen = None
     
-    internal_screen, external_screen = get_screens(randr_command)
+    if not args.gamemode_override and not args.desktop_override:
+        randr_command = get_randr_command()
+        validate_commands(['pactl', 'wmctrl', randr_command])
+        internal_screen, external_screen = get_screens(randr_command)
+
     logger.info(f"Game mode audio: {args.gamemode_audio}")
     logger.info(f"Desktop mode audio: {args.desktopmode_audio}")
     
     gamemode = Mode(
-        generate_screen_command(randr_command, external_screen, internal_screen),
+        generate_screen_command(randr_command, external_screen, internal_screen, gamemode_override),
         args.gamemode_audio,
         "Game Mode",
         external_screen
     )
     desktopmode = Mode(
-        generate_screen_command(randr_command, internal_screen, external_screen),
+        generate_screen_command(randr_command, internal_screen, external_screen, desktopmode_override),
         args.desktopmode_audio,
         "Desktop Mode",
         internal_screen
