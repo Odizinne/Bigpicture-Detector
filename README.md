@@ -8,6 +8,8 @@ Also it will switch audio devices on the one you provided with launch arguments.
 
 This script will reset your system to desktop mode at exit.
 
+![image](https://github.com/Odizinne/Bigpicture-Detector/assets/102679854/4c783923-aecf-4944-aaa6-82570a6dcf10)
+
 ## Primary use case
 
 This script is meant to be ran when using single monitor and TV plugged in.  
